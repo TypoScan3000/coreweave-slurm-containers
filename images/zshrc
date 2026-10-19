@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2025 CoreWeave, Inc.
+# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-PackageName: slurm-containers
+
+# umask, ulimits and the SUNK aliases/functions live in a POSIX file shared with bash.
+# Ubuntu's /etc/zsh/zprofile does not source /etc/profile, so for zsh this is the
+# only place SUNK_UMASK is applied.
+. /usr/share/sunk/shellrc
