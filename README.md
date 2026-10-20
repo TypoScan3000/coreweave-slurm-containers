@@ -12,6 +12,7 @@ The Slurm container image builds in multiple stages, and creates a fully functio
 - MUNGE authentication system
 - SSSD for directory service integration (LDAP/AD)
 - S6 overlay for process supervision
+- Bash and Zsh login shells with a shared set of SUNK aliases (`images/shellrc`)
 - Various utilities and tools for cluster management
 
 ## Key Components
