@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2025 CoreWeave, Inc.
+# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-PackageName: slurm-containers
+
+# Skip the interactive zsh-newuser-install wizard for users that have no zsh
+# startup files in their home directory (SUNK home directories are usually
+# pre-existing shared-storage paths). The zsh/newuser module runs right after
+# this file and invokes this function name if it is already defined.
+zsh-newuser-install() { :; }

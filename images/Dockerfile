@@ -506,6 +506,9 @@ RUN sed -i -e 's/%admin ALL=(ALL) ALL/%admin ALL=NOPASSWD:ALL/g' /etc/sudoers &&
 # falling back to the Linux-conventional 0022.
 RUN sed -i '/^if \[ -d \/etc\/profile.d \]; then$/i umask "${SUNK_UMASK:-0022}"' /etc/profile
 
+# Interactive shell defaults (umask, ulimits, SUNK aliases) shared by bash and zsh.
+# bash sources it from /etc/bash.bashrc here; the extras image wires zsh up the same way.
+COPY --chown=root:root --chmod=644 shellrc /usr/share/sunk/shellrc
 ADD bashrc /tmp/bashrc
 RUN cat /tmp/bashrc >> /etc/bash.bashrc && rm /tmp/bashrc
 
@@ -572,10 +575,19 @@ RUN apt-get -qq update && \
   vim \
   wget \
   xz-utils \
+  zsh \
   # Explicitly uninstall systemd ( dependency of emacs )
   systemd- && \
   apt-get -qq clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# zsh: share the SUNK interactive defaults with bash and skip the new-user wizard.
+# Appended after the package install so the stock /etc/zsh conffiles are in place.
+ADD zshenv /tmp/zshenv
+ADD zshrc /tmp/zshrc
+RUN cat /tmp/zshenv >> /etc/zsh/zshenv && \
+  cat /tmp/zshrc >> /etc/zsh/zshrc && \
+  rm /tmp/zshenv /tmp/zshrc
 
 RUN locale-gen en_US.UTF-8
 COPY --from=nhc-builder /build/nhc/INSTALLDIR/ /
@@ -602,6 +614,7 @@ RUN rm /etc/update-motd.d/*
 
 # Install conda
 # A user can initialize conda for their shell with: /opt/conda/bin/conda init bash --user
+# (or `conda init zsh --user` for zsh)
 ## Note, this script must end in `.sh` because their installer is janky
 ARG CONDA_VERSION
 RUN arch=$(uname -m) && \
@@ -610,7 +623,7 @@ RUN arch=$(uname -m) && \
   bash /tmp/conda_installer.sh -b -u -p /opt/conda && \
   rm /tmp/conda_installer.sh
 
-RUN /opt/conda/bin/conda init bash
+RUN /opt/conda/bin/conda init bash zsh
 
 # Install micromamba
 # A user can initialize micromamba with: micromamba shell init
