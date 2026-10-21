@@ -513,6 +513,17 @@ RUN cat /tmp/bashrc >> /etc/bash.bashrc && rm /tmp/bashrc
 # Enable automatic homedir creation for LDAP auth
 RUN pam-auth-update --enable mkhomedir
 
+# eMudhra CA compromise: distrust the roots CoreWeave Security revoked, as on hosts
+# (emSign Root CA - G1 is kept), and point the Python CA bundles at the OS store.
+# Keep last so it covers every bundle installed above.
+RUN sed -i -E 's#^(mozilla/(AAA_Certificate_Services|Comodo_AAA_Services_root|emSign_ECC_Root_CA_-_G3|emSign_Root_TLS_CA_-_G3|emSign_Root_CS_CA_-_G3|emSign_Root_CA_-_C1|emSign_ECC_Root_CA_-_C3)\.crt)$#!\1#' \
+  /etc/ca-certificates.conf && \
+  update-ca-certificates --fresh && \
+  for f in /usr/local/lib/python3*/dist-packages/certifi/cacert.pem \
+    /usr/local/lib/python3*/dist-packages/botocore/cacert.pem; do \
+    ln -sf /etc/ssl/certs/ca-certificates.crt "$f"; \
+  done
+
 # When going through s6's init as the entrypoint, container environment variables
 # are not passed through to what is run, like the `slurmd` process. Setting this
 # makes it so the environment variables are not cleared preventing you from
@@ -647,3 +658,12 @@ RUN echo "/usr/share/sunk/bin/reboot.sh" > /usr/bin/reboot && \
 
 RUN echo "/usr/share/sunk/bin/reboot.sh" > /usr/sbin/reboot && \
   chmod +x /usr/sbin/reboot
+
+# Point the CA bundles shipped by conda, pip and the AWS CLI at the OS store, which the
+# controller stage stripped of the revoked eMudhra roots. Keep last.
+RUN for f in /opt/conda/ssl/cacert.pem \
+    /opt/conda/lib/python3*/site-packages/certifi/cacert.pem \
+    /opt/conda/lib/python3*/site-packages/pip/_vendor/certifi/cacert.pem \
+    /usr/local/aws-cli/v2/current/dist/awscli/botocore/cacert.pem; do \
+    ln -sf /etc/ssl/certs/ca-certificates.crt "$f"; \
+  done
