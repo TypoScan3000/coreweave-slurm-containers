@@ -281,9 +281,17 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Wait up to 60s for the dpkg/apt lock instead of failing immediately, to avoid
 # s6-managed apt operations racing each other for the lock at runtime.
 RUN echo 'DPkg::Lock::Timeout "60";' | tee /etc/apt/apt.conf.d/99timeout
+
+# Drop denylisted root CAs before anything else in the image is fetched over TLS.
+# The registry build cache is not invalidated by new apt packages; bump
+# TRUST_STORE_REV to force this layer to refresh ca-certificates.
+COPY ca-denylist.txt /usr/share/sunk/ca-denylist.txt
+COPY bin/normalize-trust-stores.sh /usr/share/sunk/bin/normalize-trust-stores.sh
+ARG TRUST_STORE_REV=1
 RUN apt-get -qq update && \
   apt-get -qq install -y --no-install-recommends \
-  ca-certificates
+  ca-certificates && \
+  /usr/share/sunk/bin/normalize-trust-stores.sh
 
 COPY --from=libnvidia /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
 COPY --from=libnvidia /etc/apt/sources.list.d/nvidia-container-toolkit.list /etc/apt/sources.list.d/nvidia-container-toolkit.list
@@ -513,6 +521,10 @@ RUN cat /tmp/bashrc >> /etc/bash.bashrc && rm /tmp/bashrc
 # Enable automatic homedir creation for LDAP auth
 RUN pam-auth-update --enable mkhomedir
 
+# Keep last: repoint CA bundles added by later layers and fail on denylisted roots.
+RUN /usr/share/sunk/bin/normalize-trust-stores.sh && \
+  /usr/share/sunk/bin/check-trust-stores.sh
+
 # When going through s6's init as the entrypoint, container environment variables
 # are not passed through to what is run, like the `slurmd` process. Setting this
 # makes it so the environment variables are not cleared preventing you from
@@ -647,3 +659,7 @@ RUN echo "/usr/share/sunk/bin/reboot.sh" > /usr/bin/reboot && \
 
 RUN echo "/usr/share/sunk/bin/reboot.sh" > /usr/sbin/reboot && \
   chmod +x /usr/sbin/reboot
+
+# Keep last: repoint CA bundles added by later layers and fail on denylisted roots.
+RUN /usr/share/sunk/bin/normalize-trust-stores.sh && \
+  /usr/share/sunk/bin/check-trust-stores.sh
