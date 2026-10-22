@@ -15,10 +15,10 @@ ARG LIBJSON_VERSION=5
 # pmix2 for Ubuntu 22.04
 ARG SLURM_PMIX_VERSION=pmix2
 ARG LIBNSSCACHE_VERSION=0.21
-# NSSCACHE_VERSION pins the CoreWeave nsscache fork. v0.9.0 hardens SCIM handling: it skips
-# deactivated users, fails the sync on a response it cannot fully parse, and rejects uid/gid 0
-# and unsafe characters in fields written to the NSS caches.
-ARG NSSCACHE_VERSION=v0.9.0
+# NSSCACHE_VERSION pins the CoreWeave nsscache fork. v0.10.0 adds certifi and botocore floors to its
+# requirements.txt so the nsscache stage resolves CA bundles without the roots revoked after the
+# eMudhra CA compromise, regardless of when the per-arch layer cache last rebuilt.
+ARG NSSCACHE_VERSION=v0.10.0
 # This is currently only used to find the `dist-packages` location for the `nsscache` installation
 # TODO (SUNK-948): Do this dynamically
 ARG PYTHON_VERSION=3.10
