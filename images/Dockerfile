@@ -111,6 +111,10 @@ RUN apt-get -qq update && \
   unzip \
   xz-utils
 
+# Distrust root CAs implicated in the eMudhra intermediate CA compromise for build-time downloads
+RUN --mount=type=bind,source=build/distrust-ca-certificates.sh,target=/tmp/distrust-ca-certificates.sh \
+  /tmp/distrust-ca-certificates.sh
+
 # Build libjwt
 FROM builder AS libjwt-builder
 ARG LIBJWT_VERSION
@@ -286,6 +290,10 @@ RUN echo 'DPkg::Lock::Timeout "60";' | tee /etc/apt/apt.conf.d/99timeout
 RUN apt-get -qq update && \
   apt-get -qq install -y --no-install-recommends \
   ca-certificates
+
+# Distrust root CAs implicated in the eMudhra intermediate CA compromise
+RUN --mount=type=bind,source=build/distrust-ca-certificates.sh,target=/tmp/distrust-ca-certificates.sh \
+  /tmp/distrust-ca-certificates.sh
 
 COPY --from=libnvidia /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
 COPY --from=libnvidia /etc/apt/sources.list.d/nvidia-container-toolkit.list /etc/apt/sources.list.d/nvidia-container-toolkit.list
