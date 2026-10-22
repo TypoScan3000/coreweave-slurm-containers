@@ -254,6 +254,9 @@ WORKDIR /build
 # Patch default shell from empty string to configurable value in `ldap_default_shell` in nsscahe.conf
 # coreweave/nsscache is a private repo. The build mounts a netrc secret to authenticate the clone;
 # the credentials never land in an image layer or the build cache.
+# certifi and botocore are unpinned transitive deps that ship CA bundles. The floors pull in releases
+# that drop some of the roots revoked after the eMudhra CA compromise. This layer is cached, so bump
+# the floors to refresh it.
 RUN --mount=type=secret,id=netrc,target=/root/.netrc \
   export HOME=/root && \
   cd /build && \
@@ -263,7 +266,7 @@ RUN --mount=type=secret,id=netrc,target=/root/.netrc \
   mkdir -p /bundle && \
   git bundle create /bundle/coreweave-nsscache-${NSSCACHE_VERSION}.gitbundle coreweave --tags && \
   find /usr/lib/python3* -name EXTERNALLY-MANAGED -delete && \
-  pip install -r requirements.txt && \
+  pip install -r requirements.txt 'certifi>=2026.10.19' 'botocore>=1.43.117' && \
   pip install .
 
 # Stage s5cmd
