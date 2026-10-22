@@ -25,6 +25,10 @@ ARG PYTHON_VERSION=3.10
 # This needs to match the `nsscache.nsscacheConfig.default.files_dir` setting in the values
 ARG NSSCACHE_FILES_DIR="/etc/nsscache"
 ARG CONTAINER_TOOLKIT_VERSION=1.19.1-1
+# Bumping this invalidates the cached apt layers in the builder and controller stages and every
+# layer after them (RUNs implicitly take in-scope ARGs), so CI picks up the latest packages such as
+# ca-certificates. It also rebuilds all builder-derived stages, including the Slurm compile.
+ARG APT_CACHE_BUST=2026-10-22
 
 ## Controller Extras args
 ARG CONDA_VERSION=py313_25.7.0-2
@@ -35,6 +39,7 @@ FROM $PARENT_IMAGE AS builder
 
 ARG LIBJSON_VERSION
 ARG DEBIAN_FRONTEND=noninteractive
+ARG APT_CACHE_BUST
 RUN apt-get -qq update && \
   apt-get -qq install -y --no-install-recommends \
   adcli \
@@ -263,6 +268,7 @@ RUN arch=$(dpkg --print-architecture) && \
 FROM $PARENT_IMAGE AS controller
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG APT_CACHE_BUST
 RUN apt-get -qq update && \
   apt-get -qq install -y --no-install-recommends \
   ca-certificates
