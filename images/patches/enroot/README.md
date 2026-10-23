@@ -1,6 +1,6 @@
 # enroot Patches
 
-This file explains the patches in this directory, why they exist.
+This file explains the patches in this directory and why they exist.
 
 As noted in the top-level slurm-containers README, the patches are
 released under the same terms as the parent source files of `enroot`, and the
